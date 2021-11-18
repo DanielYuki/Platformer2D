@@ -5,10 +5,14 @@ using UnityEngine;
 public class PlayerMovement : MonoBehaviour{
 
     private Rigidbody2D rb;
-    private Vector2 moveInput;
+    public Vector2 moveInput;
 
     [Header("Movement")]
     public float moveSpeed;
+    public float acceleration;
+    public float deceleration;
+    public float velocityPower;
+    public float friction;
 
     [Header("Jump Check")]
     public Transform groundCheck;
@@ -62,10 +66,24 @@ public class PlayerMovement : MonoBehaviour{
     void FixedUpdate(){
         Move();
         Jump();
+
+        //apply friction if grounded
+        if (onGround && Mathf.Abs(moveInput.x) < 0.01f){
+            float amount = Mathf.Min(Mathf.Abs(rb.velocity.x), Mathf.Abs(friction));
+            amount *= Mathf.Sign(rb.velocity.x);
+            rb.AddForce(Vector2.right * -amount , ForceMode2D.Impulse);
+        }
     }
 
     void Move(){
-        rb.velocity = new Vector2(moveInput.x * moveSpeed, rb.velocity.y);
+        float desiredVelocity = moveInput.x * moveSpeed;
+        float speedDif = desiredVelocity - rb.velocity.x;
+
+        float accelRate = (Mathf.Abs(desiredVelocity) > 0.01f) ? acceleration : deceleration;  //set accelerationRate to acceleration or deceleration
+        //acceleration increases with higher speeds
+        float moveForce = Mathf.Pow(Mathf.Abs(speedDif) * accelRate, velocityPower) * Mathf.Sign(speedDif);
+
+        rb.AddForce(moveForce * Vector2.right);
     }
 
     void Jump(){
