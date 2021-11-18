@@ -350,13 +350,15 @@ MonoBehaviour:
   moveInput: {x: 0, y: 0}
   moveSpeed: 10
   groundCheck: {fileID: 1332813151}
-  onGround: 0
   isGround:
     serializedVersion: 2
     m_Bits: 64
-  checkRadius: 0.3
-  jumpForce: 15
+  groundCheckSize: {x: 0, y: 0}
+  onGround: 0
+  jumpForce: 16
   isJumping: 0
+  fullHop: 2
+  shortHop: 10
 --- !u!50 &869585589
 Rigidbody2D:
   serializedVersion: 4
@@ -376,7 +378,7 @@ Rigidbody2D:
   m_Material: {fileID: 6200000, guid: 825f34ab612279047b4805cb633fc423, type: 2}
   m_Interpolate: 0
   m_SleepingMode: 1
-  m_CollisionDetection: 0
+  m_CollisionDetection: 1
   m_Constraints: 4
 --- !u!61 &869585590
 BoxCollider2D:

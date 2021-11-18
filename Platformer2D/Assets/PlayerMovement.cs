@@ -5,39 +5,63 @@ using UnityEngine;
 public class PlayerMovement : MonoBehaviour{
 
     private Rigidbody2D rb;
-    public Vector2 moveInput;
+    private Vector2 moveInput;
 
+    [Header("Movement")]
     public float moveSpeed;
 
+    [Header("Jump Check")]
     public Transform groundCheck;
-    public bool onGround;
     public LayerMask isGround;
-    public float checkRadius = 0.3f;
+    //public float checkRadius = 0.3f;
+    public Vector2 groundCheckSize;
+    private bool onGround;
 
+    [Header("Jump Properties")]
     public float jumpForce;
-    public bool isJumping = false;
+    private bool isJumping = false;
+    public float fullHop = 2f;
+    public float shortHop = 10f;
+    
+    public float coyoteTime = 0.2f;
+    private float coyoteTimeCounter;
+
+    public float jumpBufferTime = 0.2f;
+    private float jumpBufferTimeCounter;
 
     void Start(){
         rb = GetComponent<Rigidbody2D>();
     }
 
     void Update(){
-        moveInput.x = Input.GetAxisRaw("Horizontal");
+        moveInput.x = Input.GetAxisRaw("Horizontal");   //Directional Inputs
         moveInput.y = Input.GetAxisRaw("Vertical");
 
-        onGround = Physics2D.OverlapCircle(groundCheck.position, checkRadius, isGround);
+        //onGround = Physics2D.OverlapCircle(groundCheck.position, checkRadius, isGround);
+        onGround = Physics2D.OverlapBox(groundCheck.position, groundCheckSize, 0, isGround);
 
-        if(onGround && Input.GetButtonDown("Jump")){
+        if (onGround){
+            coyoteTimeCounter = coyoteTime;
+        }else{
+            coyoteTimeCounter -= Time.deltaTime;
+        }
+
+        if (Input.GetButtonDown("Jump")){
+            jumpBufferTimeCounter = jumpBufferTime;
+        }else{
+            jumpBufferTimeCounter -= Time.deltaTime;
+        }
+
+        if(jumpBufferTimeCounter > 0f && (onGround || coyoteTimeCounter > 0f)){
             isJumping = true;
+            coyoteTimeCounter = 0;
+            jumpBufferTimeCounter = 0;
         }
     }
 
     void FixedUpdate(){
         Move();
-        
-        if (isJumping){
-            Jump();
-        }
+        Jump();
     }
 
     void Move(){
@@ -45,8 +69,22 @@ public class PlayerMovement : MonoBehaviour{
     }
 
     void Jump(){
-        rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+        if (isJumping){
+            rb.velocity = new Vector2(rb.velocity.x , 0);
+            rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+        }
+
         isJumping = false;
+
+        FastFall();
+    }
+
+    void FastFall(){
+        if (rb.velocity.y < 0){
+            rb.velocity += Vector2.up * Physics2D.gravity.y * fullHop * Time.deltaTime;
+        }else if (rb.velocity.y > 0 && !Input.GetButton("Jump")){
+            rb.velocity += Vector2.up * Physics2D.gravity.y * shortHop * Time.deltaTime;
+        }
     }
 
 }
