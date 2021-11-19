@@ -14,6 +14,9 @@ public class PlayerMovement : MonoBehaviour{
     public float velocityPower;
     public float friction;
 
+    private bool canMove = true;
+    private bool faceRight = true;
+
     [Header("Jump Check")]
     public Transform groundCheck;
     public LayerMask isGround;
@@ -21,7 +24,7 @@ public class PlayerMovement : MonoBehaviour{
     public Vector2 groundCheckSize;
     private bool onGround;
 
-    [Header("Jump Properties")]
+    [Header("Jump Properties")]  
     public float jumpForce;
     private bool isJumping = false;
     public float fullHop = 2f;
@@ -33,6 +36,16 @@ public class PlayerMovement : MonoBehaviour{
     public float jumpBufferTime = 0.2f;
     private float jumpBufferTimeCounter;
 
+    [Header("Wall Jump")]
+    public Transform wallCheck;
+    public Vector2 wallJumpDirection;
+    private bool onWall;
+    private bool wallSliding;
+    public float wallCheckRadius = 0.3f;
+    public float wallSlidingSpeed = 1.5f;
+    public float wallJumpForce;
+    public float wallJumpTime;
+
     void Start(){
         rb = GetComponent<Rigidbody2D>();
     }
@@ -41,13 +54,27 @@ public class PlayerMovement : MonoBehaviour{
         moveInput.x = Input.GetAxisRaw("Horizontal");   //Directional Inputs
         moveInput.y = Input.GetAxisRaw("Vertical");
 
+        if (!faceRight && moveInput.x > 0){
+            Flip();
+        }else if (faceRight && moveInput.x < 0){
+            Flip();
+        }
+
         //onGround = Physics2D.OverlapCircle(groundCheck.position, checkRadius, isGround);
         onGround = Physics2D.OverlapBox(groundCheck.position, groundCheckSize, 0, isGround);
+
+        onWall = Physics2D.OverlapCircle(wallCheck.position, wallCheckRadius, isGround);
 
         if (onGround){
             coyoteTimeCounter = coyoteTime;
         }else{
             coyoteTimeCounter -= Time.deltaTime;
+        }
+
+        if (onWall && !onGround && rb.velocity.y < 0 && moveInput != Vector2.zero){
+            wallSliding = true;
+        }else{
+            wallSliding = false;
         }
 
         if (Input.GetButtonDown("Jump")){
@@ -56,7 +83,7 @@ public class PlayerMovement : MonoBehaviour{
             jumpBufferTimeCounter -= Time.deltaTime;
         }
 
-        if(jumpBufferTimeCounter > 0f && (onGround || coyoteTimeCounter > 0f)){
+        if(jumpBufferTimeCounter > 0f && (onGround || onWall || coyoteTimeCounter > 0f)){
             isJumping = true;
             coyoteTimeCounter = 0;
             jumpBufferTimeCounter = 0;
@@ -64,8 +91,15 @@ public class PlayerMovement : MonoBehaviour{
     }
 
     void FixedUpdate(){
-        Move();
+        if (canMove){
+            Move();
+        }
+
         Jump();
+
+        if (wallSliding && rb.velocity.y < -wallSlidingSpeed){
+            rb.velocity = new Vector2(rb.velocity.x , -wallSlidingSpeed);
+        }
 
         //apply friction if grounded
         if (onGround && Mathf.Abs(moveInput.x) < 0.01f){
@@ -86,10 +120,23 @@ public class PlayerMovement : MonoBehaviour{
         rb.AddForce(moveForce * Vector2.right);
     }
 
+    void Flip(){
+        faceRight = !faceRight;
+        Vector3 Scaler = transform.localScale;
+        Scaler.x *= -1;
+        transform.localScale = Scaler;
+    }
+
     void Jump(){
-        if (isJumping){
+        if (isJumping && !wallSliding && onGround){
             rb.velocity = new Vector2(rb.velocity.x , 0);
             rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+        }else if (isJumping && wallSliding){
+            Vector2 wjForce = new Vector2(wallJumpForce * wallJumpDirection.x * -moveInput.x, wallJumpForce * wallJumpDirection.y);
+        
+            rb.velocity = Vector2.zero;
+            rb.AddForce(wjForce, ForceMode2D.Impulse);
+            StartCoroutine("StopMove");
         }
 
         isJumping = false;
@@ -103,6 +150,14 @@ public class PlayerMovement : MonoBehaviour{
         }else if (rb.velocity.y > 0 && !Input.GetButton("Jump")){
             rb.velocity += Vector2.up * Physics2D.gravity.y * shortHop * Time.deltaTime;
         }
+    }
+
+    IEnumerator StopMove(){
+        canMove = false;
+
+        yield return new WaitForSeconds(wallJumpTime);
+
+        canMove = true;
     }
 
 }
