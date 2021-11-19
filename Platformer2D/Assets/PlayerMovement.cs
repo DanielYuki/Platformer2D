@@ -46,6 +46,14 @@ public class PlayerMovement : MonoBehaviour{
     public float wallJumpForce;
     public float wallJumpTime;
 
+    [Header("Dash")]
+    private Vector2 dashDirection;
+    private bool isDashing = false;
+    private bool dashJump = false;
+    public float dashSpeed = 25f;
+    public int dashCount = 2;
+    public float dashTime = 0.1f;
+
     void Start(){
         rb = GetComponent<Rigidbody2D>();
     }
@@ -67,11 +75,12 @@ public class PlayerMovement : MonoBehaviour{
 
         if (onGround){
             coyoteTimeCounter = coyoteTime;
+            dashCount = 2;
         }else{
             coyoteTimeCounter -= Time.deltaTime;
         }
 
-        if (onWall && !onGround && rb.velocity.y < 0 && moveInput != Vector2.zero){
+        if (onWall && !onGround && rb.velocity.y < 0 && moveInput.x != 0){
             wallSliding = true;
         }else{
             wallSliding = false;
@@ -87,6 +96,18 @@ public class PlayerMovement : MonoBehaviour{
             isJumping = true;
             coyoteTimeCounter = 0;
             jumpBufferTimeCounter = 0;
+        }
+
+        //dash
+        if (Input.GetKeyDown(KeyCode.O) && dashCount > 0 && moveInput != Vector2.zero){
+            dashDirection = moveInput;
+            isDashing = true;
+            dashJump = true;
+            dashCount--;
+        }
+        
+        if (onGround || onWall){
+            dashJump = false;
         }
     }
 
@@ -107,6 +128,11 @@ public class PlayerMovement : MonoBehaviour{
             amount *= Mathf.Sign(rb.velocity.x);
             rb.AddForce(Vector2.right * -amount , ForceMode2D.Impulse);
         }
+
+        if (isDashing){
+            Dash();
+        }
+
     }
 
     void Move(){
@@ -145,17 +171,49 @@ public class PlayerMovement : MonoBehaviour{
     }
 
     void FastFall(){
-        if (rb.velocity.y < 0){
+        if (rb.velocity.y < 0 && !isDashing){
             rb.velocity += Vector2.up * Physics2D.gravity.y * fullHop * Time.deltaTime;
-        }else if (rb.velocity.y > 0 && !Input.GetButton("Jump")){
+        }else if ((rb.velocity.y > 0 && !Input.GetButton("Jump")) || dashJump){
             rb.velocity += Vector2.up * Physics2D.gravity.y * shortHop * Time.deltaTime;
         }
     }
 
+    void Dash(){
+        rb.velocity = Vector2.zero;
+        rb.velocity += dashDirection.normalized * dashSpeed;
+        StartCoroutine("StopMove");
+    }
+
+    // IEnumerator DashStopMove(){
+    //     canMove = false;
+    //     rb.gravityScale = 0;
+
+    //     yield return new WaitForSeconds(dashTime);
+
+    //     canMove = true;
+    //     isDashing = false;
+    //     rb.gravityScale = 3;
+    // }
+
+    // IEnumerator WallJumpStopMove(){
+    //     canMove = false;
+
+    //     yield return new WaitForSeconds(wallJumpTime);
+
+    //     canMove = true;
+    // }
+
     IEnumerator StopMove(){
         canMove = false;
 
-        yield return new WaitForSeconds(wallJumpTime);
+        if (isDashing){
+            rb.gravityScale = 0;
+            yield return new WaitForSeconds(dashTime);
+            rb.gravityScale = 3;
+            isDashing = false;
+        }else if (wallSliding){
+            yield return new WaitForSeconds(wallJumpTime);
+        }
 
         canMove = true;
     }
