@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour{
 
-    private Rigidbody2D rb;
+    public Rigidbody2D rb;
     private Vector2 moveInput;
     private PlayerParticles particles;
     public  ShadowTrail dashFx;
@@ -38,7 +38,7 @@ public class PlayerMovement : MonoBehaviour{
     private float coyoteTimeCounter;
 
     public float jumpBufferTime = 0.2f;
-    private float jumpBufferTimeCounter;
+    public float jumpBufferTimeCounter;
 
     [Header("Wall Jump")]
     public Transform wallCheck;
@@ -53,7 +53,7 @@ public class PlayerMovement : MonoBehaviour{
     [Header("Dash")]
     private Vector2 dashDirection;
     private bool isDashing = false;
-    private bool dashJump = false;
+    public bool dashJump = false;
     public float dashSpeed = 25f;
     public int dashCount = 2;
     public float dashTime = 0.1f;
