@@ -9,6 +9,7 @@ public class PlayerMovement : MonoBehaviour{
     private PlayerParticles particles;
     public  ShadowTrail dashFx;
     public CamShake cam;
+    public Animator anim;
 
     [Header("Movement")]
     public float moveSpeed;
@@ -84,6 +85,7 @@ public class PlayerMovement : MonoBehaviour{
             if (particles.spawnLandingDust){ //Generates particles on landing... thats it
                 particles.CreateLandingDust();
                 particles.spawnLandingDust = false;
+                anim.SetTrigger("Landing");
             }
         }else{
             coyoteTimeCounter -= Time.deltaTime;
@@ -176,6 +178,7 @@ public class PlayerMovement : MonoBehaviour{
             rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
 
             particles.CreateDust();
+            anim.SetTrigger("Jump");
         }else if (isJumping && wallSliding){
             Vector2 wjForce = new Vector2(wallJumpForce * wallJumpDirection.x * -moveInput.x, wallJumpForce * wallJumpDirection.y);
         
@@ -184,6 +187,7 @@ public class PlayerMovement : MonoBehaviour{
             StartCoroutine("StopMove");
 
             particles.CreateWallJumpDust();
+            anim.SetTrigger("WallJump");
         }
 
         isJumping = false;
@@ -205,6 +209,8 @@ public class PlayerMovement : MonoBehaviour{
         StartCoroutine("StopMove");
 
         cam.ShakeCam(0.75f ,0.4f);
+        particles.CreateDashDust();
+        anim.SetTrigger("Dash");
     }
 
     IEnumerator StopMove(){
@@ -213,7 +219,6 @@ public class PlayerMovement : MonoBehaviour{
         if (isDashing){
             rb.gravityScale = 0;
             dashFx.makeTrail = true;
-            particles.CreateDashDust();
 
             yield return new WaitForSeconds(dashTime);
 
