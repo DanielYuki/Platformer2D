@@ -5,7 +5,10 @@ using UnityEngine;
 public class PlayerMovement : MonoBehaviour{
 
     private Rigidbody2D rb;
-    public Vector2 moveInput;
+    private Vector2 moveInput;
+    private PlayerParticles particles;
+    public  ShadowTrail dashFx;
+    public CamShake cam;
 
     [Header("Movement")]
     public float moveSpeed;
@@ -56,6 +59,7 @@ public class PlayerMovement : MonoBehaviour{
 
     void Start(){
         rb = GetComponent<Rigidbody2D>();
+        particles = GetComponent<PlayerParticles>();
     }
 
     void Update(){
@@ -76,12 +80,21 @@ public class PlayerMovement : MonoBehaviour{
         if (onGround){
             coyoteTimeCounter = coyoteTime;
             dashCount = 2;
+
+            if (particles.spawnLandingDust){ //Generates particles on landing... thats it
+                particles.CreateLandingDust();
+                particles.spawnLandingDust = false;
+            }
         }else{
             coyoteTimeCounter -= Time.deltaTime;
+
+            particles.spawnLandingDust = true;
         }
 
         if (onWall && !onGround && rb.velocity.y < 0 && moveInput.x != 0){
             wallSliding = true;
+
+            particles.CreateWallDust();
         }else{
             wallSliding = false;
         }
@@ -151,18 +164,26 @@ public class PlayerMovement : MonoBehaviour{
         Vector3 Scaler = transform.localScale;
         Scaler.x *= -1;
         transform.localScale = Scaler;
+
+        if (rb.velocity.y == 0){
+            particles.CreateDust();
+        }
     }
 
     void Jump(){
         if (isJumping && !wallSliding && onGround){
             rb.velocity = new Vector2(rb.velocity.x , 0);
             rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+
+            particles.CreateDust();
         }else if (isJumping && wallSliding){
             Vector2 wjForce = new Vector2(wallJumpForce * wallJumpDirection.x * -moveInput.x, wallJumpForce * wallJumpDirection.y);
         
             rb.velocity = Vector2.zero;
             rb.AddForce(wjForce, ForceMode2D.Impulse);
             StartCoroutine("StopMove");
+
+            particles.CreateWallJumpDust();
         }
 
         isJumping = false;
@@ -182,35 +203,24 @@ public class PlayerMovement : MonoBehaviour{
         rb.velocity = Vector2.zero;
         rb.velocity += dashDirection.normalized * dashSpeed;
         StartCoroutine("StopMove");
+
+        cam.ShakeCam(0.75f ,0.4f);
     }
-
-    // IEnumerator DashStopMove(){
-    //     canMove = false;
-    //     rb.gravityScale = 0;
-
-    //     yield return new WaitForSeconds(dashTime);
-
-    //     canMove = true;
-    //     isDashing = false;
-    //     rb.gravityScale = 3;
-    // }
-
-    // IEnumerator WallJumpStopMove(){
-    //     canMove = false;
-
-    //     yield return new WaitForSeconds(wallJumpTime);
-
-    //     canMove = true;
-    // }
 
     IEnumerator StopMove(){
         canMove = false;
 
         if (isDashing){
             rb.gravityScale = 0;
+            dashFx.makeTrail = true;
+            particles.CreateDashDust();
+
             yield return new WaitForSeconds(dashTime);
+
             rb.gravityScale = 3;
             isDashing = false;
+
+            dashFx.makeTrail = false;
         }else if (wallSliding){
             yield return new WaitForSeconds(wallJumpTime);
         }
