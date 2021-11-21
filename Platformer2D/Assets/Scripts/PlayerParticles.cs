@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class PlayerParticles : MonoBehaviour{
 
-    public ParticleSystem dust, wallDust, wallJumpDust, landingDust, dashDust;
+    public ParticleSystem dust, wallDust, wallJumpDust, landingDust, dashDust, death;
     public bool spawnLandingDust = false;
 
     public void CreateDust(){
@@ -25,5 +25,9 @@ public class PlayerParticles : MonoBehaviour{
 
     public void CreateDashDust(){
         dashDust.Play();
+    }
+
+    public void DeathPS(){
+        death.Play();
     }
 }

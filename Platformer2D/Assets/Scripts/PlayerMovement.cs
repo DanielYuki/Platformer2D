@@ -18,7 +18,7 @@ public class PlayerMovement : MonoBehaviour{
     public float velocityPower;
     public float friction;
 
-    private bool canMove = true;
+    public bool canMove = true;
     private bool faceRight = true;
 
     [Header("Jump Check")]
