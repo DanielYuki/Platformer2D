@@ -24,6 +24,12 @@ public class PlayerHandler : MonoBehaviour{
         }
     }
 
+    void OnTriggerEnter2D(Collider2D other) {
+        if (other.CompareTag("Death")){
+            Death();
+        }
+    }
+
     void Death(){
         StartCoroutine("DeathTimer");
         mov.canMove = false;
